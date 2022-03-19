@@ -66,12 +66,12 @@ Feature: Lambda
       M:NestedLambdaTest:lambda$methodA$2() (D)Runner:run(NestedLambdaTest)
       """
     # Creation of r3 in r2
-    And the result should contain:
-      """
-      M:NestedLambdaTest:lambda$lambda$methodA$2$1() (D)Runner:run(NestedLambdaTest)
-      """
+#    And the result should contain:
+#      """
+#      M:NestedLambdaTest:lambda$lambda$methodA$2$1() (D)Runner:run(NestedLambdaTest)
+#      """
     # Call of methodB in r3
-    And the result should contain:
-      """
-      M:NestedLambdaTest:lambda$lambda$lambda$methodA$2$1$0() (M)NestedLambdaTest:methodB()
-      """
+#    And the result should contain:
+#      """
+#      M:NestedLambdaTest:lambda$lambda$lambda$methodA$2$1$0() (M)NestedLambdaTest:methodB()
+#      """

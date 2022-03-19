@@ -18,7 +18,7 @@
       <groupId>org.apache.bcel</groupId>
       <artifactId>bcel</artifactId>
       <version>6.2</version>
-      <scope>provided</scope>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>javassist</groupId>
@@ -29,13 +29,13 @@
     <dependency>
         <groupId>io.cucumber</groupId>
         <artifactId>cucumber-java</artifactId>
-        <version>2.3.1</version>
+        <version>7.2.3</version>
         <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>io.cucumber</groupId>
         <artifactId>cucumber-junit</artifactId>
-        <version>2.3.1</version>
+        <version>7.2.3</version>
         <scope>test</scope>
     </dependency>
     <dependency>
@@ -76,7 +76,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.6.1</version>
+        <version>3.9.0</version>
         <configuration>
           <optimize>false</optimize>
           <source>1.8</source>

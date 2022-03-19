@@ -33,10 +33,13 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.apache.bcel.classfile.ClassParser;
+
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Constructs a callgraph out of a JAR archive. Can combine multiple archives
@@ -47,21 +50,9 @@ import org.apache.bcel.classfile.ClassParser;
 public class JCallGraph {
 
     public static void main(String[] args) {
-
-        Function<ClassParser, ClassVisitor> getClassVisitor =
-                (ClassParser cp) -> {
-                    try {
-                        return new ClassVisitor(cp.parse());
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                };
-
         try {
             for (String arg : args) {
-
                 File f = new File(arg);
-
                 if (!f.exists()) {
                     System.err.println("Jar file " + arg + " does not exist");
                 }
@@ -69,15 +60,13 @@ public class JCallGraph {
                 try (JarFile jar = new JarFile(f)) {
                     Stream<JarEntry> entries = enumerationAsStream(jar.entries());
 
-                    String methodCalls = entries.
-                            flatMap(e -> {
-                                if (e.isDirectory() || !e.getName().endsWith(".class"))
-                                    return (new ArrayList<String>()).stream();
-
-                                ClassParser cp = new ClassParser(arg, e.getName());
-                                return getClassVisitor.apply(cp).start().methodCalls().stream();
-                            }).
-                            map(s -> s + "\n").
+                    Stream<Visited> visitedEntries = entries
+                            .map(e -> visitEntryAsClass(arg, e))
+                            .filter(Optional::isPresent)
+                            .map(Optional::get);
+                    Stream<Visited> processedEntries = calculateReferencesByOthers(visitedEntries);
+                    String methodCalls = processedEntries.
+                            map(v -> visitedToString(v)).
                             reduce(new StringBuilder(),
                                     StringBuilder::append,
                                     StringBuilder::append).toString();
@@ -91,6 +80,51 @@ public class JCallGraph {
             System.err.println("Error while processing jar: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private static ClassVisitor getClassVisitor(ClassParser cp) {
+        try {
+            return new ClassVisitor(cp.parse());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Optional<Visited> visitEntryAsClass(String arg, JarEntry e) {
+        if (e.isDirectory() || !e.getName().endsWith(".class"))
+            return Optional.empty();
+
+        ClassParser cp = new ClassParser(arg, e.getName());
+        return Optional.of(getClassVisitor(cp).start());
+    }
+
+    private static Stream<Visited> calculateReferencesByOthers(Stream<Visited> visited) {
+        List<Visited> vis = new ArrayList<>();
+        Map<String, Integer> referencedMap = visited.map(v -> {
+            vis.add(v);
+            return v;
+        }).map(v -> v.getCalled())
+                .flatMap((Map<String, Integer> m) -> m.entrySet().stream())
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, Integer::sum));
+        return vis.stream().map(v -> {
+            if (referencedMap.containsKey(v.getCaller())) {
+                v.setReferencedByOthers(referencedMap.get(v.getCaller()));
+            }
+            return v;
+        });
+    }
+
+    private static String visitedToString(Visited v) {
+        return toString(v);
+    }
+
+    private static String toString(Visited v) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, Integer> e : v.getCalled().entrySet()) {
+            //         Caller,          Referenced by others,            Called,           Referenced count
+            sb.append(v.getCaller() + "," + v.getReferencedByOthers() + "," + e.getKey() + "," + e.getValue().toString() + "\n");
+        }
+        return sb.toString();
     }
 
     public static <T> Stream<T> enumerationAsStream(Enumeration<T> e) {

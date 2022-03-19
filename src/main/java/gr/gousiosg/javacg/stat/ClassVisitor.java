@@ -46,15 +46,15 @@ import java.util.List;
 public class ClassVisitor extends EmptyVisitor {
 
     private JavaClass clazz;
+    private Visited visited;
     private ConstantPoolGen constants;
-    private String classReferenceFormat;
     private final DynamicCallManager DCManager = new DynamicCallManager();
     private List<String> methodCalls = new ArrayList<>();
 
     public ClassVisitor(JavaClass jc) {
         clazz = jc;
         constants = new ConstantPoolGen(clazz.getConstantPool());
-        classReferenceFormat = "C:" + clazz.getClassName() + " %s";
+        visited = new Visited(clazz.getClassName());
     }
 
     public void visitJavaClass(JavaClass jc) {
@@ -65,7 +65,6 @@ public class ClassVisitor extends EmptyVisitor {
             DCManager.retrieveCalls(method, jc);
             DCManager.linkCalls(method);
             method.accept(this);
-
         }
     }
 
@@ -75,9 +74,8 @@ public class ClassVisitor extends EmptyVisitor {
             if (constant == null)
                 continue;
             if (constant.getTag() == 7) {
-                String referencedClass = 
-                    constantPool.constantToString(constant);
-                System.out.println(String.format(classReferenceFormat, referencedClass));
+                String referencedClass = constantPool.constantToString(constant);
+                visited.referenced(referencedClass);
             }
         }
     }
@@ -88,9 +86,9 @@ public class ClassVisitor extends EmptyVisitor {
         methodCalls.addAll(visitor.start());
     }
 
-    public ClassVisitor start() {
+    public Visited start() {
         visitJavaClass(clazz);
-        return this;
+        return this.visited;
     }
 
     public List<String> methodCalls() {

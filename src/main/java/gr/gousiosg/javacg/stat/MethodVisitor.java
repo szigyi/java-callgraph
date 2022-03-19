@@ -44,6 +44,7 @@ import java.util.List;
 public class MethodVisitor extends EmptyVisitor {
 
     JavaClass visitedClass;
+    private Visited visited;
     private MethodGen mg;
     private ConstantPoolGen cp;
     private String format;
@@ -53,15 +54,16 @@ public class MethodVisitor extends EmptyVisitor {
         visitedClass = jc;
         mg = m;
         cp = mg.getConstantPool();
-        format = "M:" + visitedClass.getClassName() + ":" + mg.getName() + "(" + argumentList(mg.getArgumentTypes()) + ")"
-            + " " + "(%s)%s:%s(%s)";
+        visited = new Visited(visitedClass.getClassName() + ":" + mg.getName());
+        format = "M," + visitedClass.getClassName() + "," + mg.getName() + "(" + argumentList(mg.getArgumentTypes()) + ")"
+            + " " + "(%s)%s,%s(%s)";
     }
 
     private String argumentList(Type[] arguments) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < arguments.length; i++) {
             if (i != 0) {
-                sb.append(",");
+                sb.append(";");
             }
             sb.append(arguments[i].toString());
         }
